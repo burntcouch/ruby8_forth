@@ -2,19 +2,8 @@
 
 module FT
 
-  DSTACK = [2,3,4,7]
-  RSTACK = []
-  TOKENS = []
   FWORDS = Hash.new
-  FMEM = Hash.new
-  TEMP1 = 0
-  TEMP2 = 0
-  TEMP3 = 0
-  TEMP4 = 0
-  TEMP5 = 0
-  
-  LASTHEAP = 0
-  NEXTHEAP = 0
+  STATUS = Hash.new
 
   LOOK16 = "0123456789ABCDEF"
 
@@ -172,13 +161,24 @@ module FT
  
 
   class Fword
-    attr_accessor :name, :addr, :cfa
+    attr_accessor :name, :addr, :cfa, :imm
+
+    def Fword.remove(name)
+      if FWORDS.has_key?(name)
+        FWORDS.delete(name)
+      end
+    end
     
     def initialize(name)
        @name = name
        @cfa = Array.new
        @addr = nil
+       @imm = false
        FWORDS[name] = self
+    end
+
+    def seti
+      @imm = true
     end
     
     def pproc(*p)             # must be a Proc, or another Fword
@@ -192,6 +192,8 @@ module FT
             res = p.call
           elsif p.is_a?(Fword)
             p.x
+          elsif p.is_a?(String) && FWORDS.has_key?(p)
+            FWORDS[p].x
           end
        end
        return res
@@ -214,7 +216,7 @@ module FT
   end
  
   class Fmach
-    attr_accessor :name, :mem, :map
+    attr_accessor :name, :mem, :map, :stacks, :labels
     
     def initialize(name)
       @name = name
@@ -564,7 +566,7 @@ module FT
       end
       self.sta(p.addr, bup)   # restore pointer address
       
-      print "#{sname.to_s}: #{sitems} :"
+      print "\n#{sname.to_s}: #{sitems} :"
       if sitems > 0
          print res
       else
